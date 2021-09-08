@@ -1,0 +1,104 @@
+version: '3'
+
+services:
+  authenticationDB:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+    - dbdataAuthentication:/var/lib/mysql
+    networks:
+      - auth_net
+  authenticationDBMigration:
+    image: authentication_db_migration_image
+    environment:
+      - DATABASE_URL=authenticationDB
+    networks:
+      - auth_net
+  authentication:
+    image: authentication_image
+    environment:
+      - DATABASE_URL=authenticationDB
+    depends_on:
+      - authenticationDBMigration
+    ports:
+      - 5002:5002
+    networks:
+      - auth_net
+  electionsDB:
+    image: mysql
+    environment:
+    - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - dbdataElections:/var/lib/mysql
+    networks:
+      - admin_net
+      - vote_net
+  electionsDBMigration:
+    image: elections_db_migration_image
+    environment:
+      - DATABASE_URL=electionsDB
+    networks:
+      - admin_net
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+    networks:
+      - vote_net
+      - official_net
+  adminer:
+    image: adminer
+    depends_on:
+      - authenticationDBMigration
+      - electionsDBMigration
+    ports:
+      - 8080:8080
+    networks:
+      - auth_net
+      - admin_net
+  admin:
+    image: admin_image
+    environment:
+      - DATABASE_URL=electionsDB
+    depends_on:
+      - electionsDBMigration
+    ports:
+      - 5000:5000
+    networks:
+      - admin_net
+  official:
+    image: official_image
+    environment:
+      - DATABASE_URL=electionsDB
+    depends_on:
+      - electionsDBMigration
+    ports:
+      - 5001:5001
+    networks:
+      - official_net
+    deploy:
+      replicas: 3
+  daemon:
+    image: daemon_image
+    environment:
+      - DATABASE_URL=electionsDB
+#      - REDIS_URL=redis
+    depends_on:
+      - electionsDBMigration
+      - redis
+    networks:
+      - vote_net
+      - admin_net
+
+volumes:
+  dbdataAuthentication:
+  dbdataElections:
+networks:
+  auth_net:
+#    driver: overlay
+  official_net:
+  vote_net:
+#    driver: overlay
+  admin_net:
+#    driver: overlay

@@ -1,0 +1,96 @@
+version: '3'
+
+services:
+  authenticationDB:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+        timeout: 10s
+        retries: 10
+    volumes:
+    - dbdataAuthentication:/var/lib/mysql
+#    ports:
+#      - 3306:3306
+    networks:
+      - net
+  authenticationDBMigration:
+    image: authentication_db_migration_image
+    environment:
+      - DATABASE_URL=authenticationDB
+    networks:
+      - net
+  authentication:
+    image: authentication_image
+    environment:
+      - DATABASE_URL=authenticationDB
+    ports:
+      - 5002:5002
+    networks:
+      - net
+  electionsDB:
+    image: mysql
+    environment:
+    - MYSQL_ROOT_PASSWORD=root
+    healthcheck:
+        test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+        timeout: 10s
+        retries: 10
+    volumes:
+      - dbdataElections:/var/lib/mysql
+#    ports:
+#      - 3307:3306
+    networks:
+      - net
+  electionsDBMigration:
+    image: elections_db_migration_image
+    environment:
+      - DATABASE_URL=electionsDB
+    networks:
+      - net
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+    networks:
+      - net
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+    networks:
+      - net
+  admin:
+    image: admin_image
+    environment:
+      - DATABASE_URL=electionsDB
+    ports:
+      - 5000:5000
+    networks:
+      - net
+  official:
+    image: official_image
+    environment:
+      - DATABASE_URL=electionsDB
+    ports:
+      - 5001:5001
+    networks:
+      - net
+    deploy:
+      mode: replicated
+      replicas: 3
+  daemon:
+    image: daemon_image
+    environment:
+      - DATABASE_URL=electionsDB
+#      - REDIS_URL=redis
+    networks:
+      - net
+
+volumes:
+  dbdataAuthentication:
+  dbdataElections:
+networks:
+  net:
+    driver: overlay

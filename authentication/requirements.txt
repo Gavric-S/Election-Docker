@@ -1,0 +1,9 @@
+PyMySQL
+cryptography
+Flask==1.1.2
+flask_sqlalchemy
+SQLAlchemy < 1.4.0
+flask_migrate==2.7.0
+flask_script
+sqlalchemy_utils
+flask_jwt_extended==4.1.0
